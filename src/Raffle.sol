@@ -1,27 +1,6 @@
-// Layout of Contract:
-// version
-// imports
-// errors
-// interfaces, libraries, contracts
-// Type declarations - enum
-// State variables
-// Events
-// Modifiers
-// Functions
-
-// Layout of Functions:
-// constructor
-// receive function (if exists)
-// fallback function (if exists)
-// external
-// public
-// internal
-// private
-// internal & private view & pure functions
-// external & public view & pure functions
-
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+
+pragma solidity ^0.8.19;
 
 import {
     VRFConsumerBaseV2Plus
@@ -32,37 +11,51 @@ import {
 
 /**
  * @title Raffle
- * @author
+ * @author Mustby
  * @notice This contract is for creating a sample raffle contract
  * @dev Implements Chainlink VRF for random number generation VRFv2.5
  */
 
 contract Raffle is VRFConsumerBaseV2Plus {
-    /* Errors */
+    /*//////////////////////////////////////////////////////////////
+                                ERRORS
+    //////////////////////////////////////////////////////////////*/
+
     error Raffle__SendMoreToEnterRaffle();
     error Raffle__TransferFailed();
     error Raffle__RaffleNotOpen();
     error Raffle__UpkeepNotNeeded(uint256 balance, uint256 length, uint256 s_raffleState);
 
-    /* Type Declarations */
+    /*//////////////////////////////////////////////////////////////
+                            Type Declarations
+    //////////////////////////////////////////////////////////////*/
+
     enum RaffleState {
         OPEN, // 0
         CALCULATING // 1
     }
 
-    /* State Variables */
+    /*//////////////////////////////////////////////////////////////
+                            STATE VARIABLES
+    //////////////////////////////////////////////////////////////*/
+
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
+
     uint256 private immutable i_entranceFee;
     // @dev The duration of the raffle in seconds
     uint256 private immutable i_interval;
     bytes32 private immutable i_keyHash;
     uint256 private immutable i_subscriptionId;
     uint32 private immutable i_callbackGasLimit;
-    address payable[] private s_players;
+
+    address payable[] private s_players; // storage variable because the amount fo players will be changing!
     uint256 private s_lastTimeStamp;
     address private s_recentWinner;
     RaffleState private s_raffleState; // start as open
+
+    // Variable Structure
+    // Type - Visibility - Name!
 
     /* Events */
     event RaffleEntered(address indexed player);
@@ -147,13 +140,13 @@ contract Raffle is VRFConsumerBaseV2Plus {
             revert Raffle__UpkeepNotNeeded(address(this).balance, s_players.length, uint256(s_raffleState));
         }
 
-        s_raffleState = RaffleState.CALCULATING;
+        s_raffleState = RaffleState.CALCULATING; // This starts after the chainlink VRF request....
         // uint256 requestId = s_vrfCoordinator.requestRandomWords(
         VRFV2PlusClient.RandomWordsRequest memory request = VRFV2PlusClient.RandomWordsRequest({
-            keyHash: i_keyHash,
+            keyHash: i_keyHash, // gas price
             subId: i_subscriptionId,
             requestConfirmations: REQUEST_CONFIRMATIONS,
-            callbackGasLimit: i_callbackGasLimit,
+            callbackGasLimit: i_callbackGasLimit, // gas limit
             numWords: NUM_WORDS,
             extraArgs: VRFV2PlusClient._argsToBytes(
                 // Set nativePayment to true to pay for VRF requests with Sepolia ETH instead of LINK
@@ -182,7 +175,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         address payable recentWinner = s_players[indexOfWinner];
         s_recentWinner = recentWinner;
 
-        s_raffleState = RaffleState.OPEN;
+        s_raffleState = RaffleState.OPEN; // Reopen the raffle after a winner is picked!
         s_players = new address payable[](0);
         s_lastTimeStamp = block.timestamp;
         emit WinnerPicked(s_recentWinner);
@@ -194,9 +187,9 @@ contract Raffle is VRFConsumerBaseV2Plus {
         }
     }
 
-    /**
-     * Getter Functions
-     */
+    /*//////////////////////////////////////////////////////////////
+                            GETTER FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
 
     function getEntranceFee() external view returns (uint256) {
         return i_entranceFee;
