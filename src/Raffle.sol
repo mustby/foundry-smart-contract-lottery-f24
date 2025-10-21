@@ -57,7 +57,10 @@ contract Raffle is VRFConsumerBaseV2Plus {
     // Variable Structure
     // Type - Visibility - Name!
 
-    /* Events */
+    /*//////////////////////////////////////////////////////////////
+                                EVENTS
+    //////////////////////////////////////////////////////////////*/
+
     event RaffleEntered(address indexed player);
     event WinnerPicked(address indexed winner);
     event RequestedRaffleWinner(uint256 indexed requestId);
@@ -98,12 +101,14 @@ contract Raffle is VRFConsumerBaseV2Plus {
     // When should the winner be picked
     //**
     /**
-     * If the lottery is ready to have a winner picked.
+     * @dev this is the function that the chainlink automation nodes call
+     * if the lottery is ready to have a winner picked. (using a cron job)
      * The following should be true in order for upkeepNeeded to be true:
      * 1. The time interval has passed between raffle runs
      * 2. The lottery is OPEN
      * 3. The contract has ETH
-     * 4. Implicitly, your subscription has LINK
+     * 4. The contract has players
+     * 5. Implicitly, your subscription has LINK
      * @param - ignored
      * @return upkeepNeeded - true if it's time to restart the lottery
      * @return - ignored
@@ -115,7 +120,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         public
         view
         returns (
-            bool upkeepNeeded,
+            bool upkeepNeeded, // this bool defaults to false...
             bytes memory /*performData*/
         )
     {
@@ -127,7 +132,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
         return (upkeepNeeded, "0x0");
     }
 
-    // 3. Be automatically called
+    // 3. Be automatically called - where is it being directly called? Called by another function? Chainlink auto calls this too?
     function performUpkeep(
         bytes calldata /* perform Data */
     )
@@ -153,13 +158,15 @@ contract Raffle is VRFConsumerBaseV2Plus {
                 VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
             )
         });
-        uint256 requestId = s_vrfCoordinator.requestRandomWords(request);
+        uint256 requestId = s_vrfCoordinator.requestRandomWords(request); // this is where we request the random words!
         // Quiz... is this redundant?
         emit RequestedRaffleWinner(requestId);
     }
 
     // CEI: Checks, Effects, Interactions Pattern
     // Governs picking the random winners...then resets the lottery!
+
+    // Where does this function get called from???? Do we need this?
 
     function fulfillRandomWords(
         uint256,
@@ -169,18 +176,18 @@ contract Raffle is VRFConsumerBaseV2Plus {
         internal
         override
     {
-        // Checks
-        // Effects
+        // Checks - requires/conditionals/etc
+        // Effects (Internal contract state changes)
         uint256 indexOfWinner = randomwords[0] % s_players.length;
         address payable recentWinner = s_players[indexOfWinner];
         s_recentWinner = recentWinner;
 
         s_raffleState = RaffleState.OPEN; // Reopen the raffle after a winner is picked!
-        s_players = new address payable[](0);
-        s_lastTimeStamp = block.timestamp;
+        s_players = new address payable[](0); // Reset the players array
+        s_lastTimeStamp = block.timestamp; // Reset the timestamp & interval on when somebody can call pick winner
         emit WinnerPicked(s_recentWinner);
 
-        // Interactions (external contract interactions)
+        // Interactions (External contract interactions)
         (bool success,) = recentWinner.call{value: address(this).balance}("");
         if (!success) {
             revert Raffle__TransferFailed();
