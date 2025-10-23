@@ -159,7 +159,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
             )
         });
         uint256 requestId = s_vrfCoordinator.requestRandomWords(request); // this is where we request the random words!
-        // Quiz... is this redundant?
+        // Quiz... is this redundant? Yes! VRF Coordinator mock is already emitting the event...
         emit RequestedRaffleWinner(requestId);
     }
 

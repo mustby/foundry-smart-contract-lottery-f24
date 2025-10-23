@@ -44,7 +44,7 @@ contract DeployRaffle is Script {
 
         // AddConsumer = assumeNoBlacklisted(token, addr);
         AddConsumer addConsumer = new AddConsumer();
-        // Don't need to broadcast
+        // Don't need to broadcast...already do that in the addConsumer contract & function
         addConsumer.addConsumer(address(raffle), config.vrfCoordinator, config.subscriptionId, config.account);
 
         return (raffle, helperConfig);

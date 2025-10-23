@@ -64,7 +64,7 @@ contract HelperConfig is CodeConstants, Script {
             vrfCoordinator: 0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B,
             gasLane: 0x787d74caea10b2b357790d5b5247c2f63d1d91572a9846f780606e4d953677ae,
             callbackGasLimit: 500000, // 500,000 gas
-            subscriptionId: 0,
+            subscriptionId: 0, // add later
             link: 0x779877A7B0D9E8603169DdbD7836e478b4624789,
             account: 0xD83117AaBb90B78b789a1B27cceA195D4F6A6858
         });
@@ -83,7 +83,7 @@ contract HelperConfig is CodeConstants, Script {
             MOCK_GAS_PRICE_LINK,
             int256(MOCK_WEI_PER_UNIT_LINK) // Corrected type here
         );
-        LinkToken linkToken = new LinkToken();
+        LinkToken linkToken = new LinkToken(); // Deployed a LINK token mock
         vm.stopBroadcast();
 
         localNetworkConfig = NetworkConfig({

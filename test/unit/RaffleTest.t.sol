@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 
 import {Test} from "lib/forge-std/src/Test.sol";
 import {DeployRaffle} from "script/DeployRaffle.s.sol";
+import {console2} from "lib/forge-std/src/Script.sol";
 import {Raffle} from "src/Raffle.sol";
 import {HelperConfig} from "script/HelperConfig.s.sol";
 import {Vm} from "lib/forge-std/src/Vm.sol";
@@ -86,7 +87,7 @@ contract RaffleTest is CodeConstants, Test {
         raffle.enterRaffle{value: entranceFee}();
         vm.warp(block.timestamp + interval + 1); // time has changed
         vm.roll(block.number + 1); // the block number has changed/incremented
-        raffle.performUpkeep("");
+        raffle.performUpkeep(""); // to get this to pass...we had to setup a raffle contract on Sepolia VRF...
 
         // Act & Assert
         vm.expectRevert(Raffle.Raffle__RaffleNotOpen.selector);
@@ -101,6 +102,8 @@ contract RaffleTest is CodeConstants, Test {
         // Arrange
         vm.warp(block.timestamp + interval + 1);
         vm.roll(block.number + 1);
+
+        // Intentionally NOT entering the raffle
 
         // Act
         (bool upkeepNeeded,) = raffle.checkUpkeep("");
@@ -199,10 +202,11 @@ contract RaffleTest is CodeConstants, Test {
     function testPerformUpkeepUpdatesRaffleStateAndEmitsRequestId() public raffleEntered {
         // Arrange --> Already have the modifier accounting for this!
         // Act
-        vm.recordLogs();
+        vm.recordLogs(); // whatever logs are emitted next...keep track of them and stick them into an array...
         raffle.performUpkeep("");
         Vm.Log[] memory entries = vm.getRecordedLogs();
         bytes32 requestId = entries[1].topics[1];
+        console2.log("Request ID from performUpkeep is:", uint256(requestId));
 
         // Assert
         Raffle.RaffleState raffleState = raffle.getRaffleState();
@@ -220,6 +224,8 @@ contract RaffleTest is CodeConstants, Test {
         }
         _;
     }
+
+    // The below is a stateless fuzz test because we're passing a variable that gets randomized by Foundry!
 
     function testFulfillRandomWordsCanOnlyBeCalledAfterPerformUpkeep(uint256 randomRequestId) public raffleEntered {
         // Arrange

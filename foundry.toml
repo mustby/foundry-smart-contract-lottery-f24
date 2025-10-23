@@ -9,6 +9,7 @@ remappings = [
     '@solmate=lib/solmate/src/',
 ]
 
+# Give foundry read access to these folders
 fs_permissions = [
     { access = "read", path = "./broadcast" },
     { access = "read", path = "./reports" },
